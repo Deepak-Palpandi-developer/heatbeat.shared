@@ -152,6 +152,6 @@ public static class ResponseCodes
     public static class CustomStatusMessages
     {
         public const string JwtNotInitialzeErrorMessage = "JWT configuration is missing. Please set JWT_SECRET_KEY, JWT_ISSUER, and JWT_AUDIENCE.";
-        public const string DecryptionFailed = "";
+        public const string DecryptionFailed = "Unable to decrypt request payload.";
     }
 }

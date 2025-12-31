@@ -32,7 +32,9 @@ public static class ServiceExtensions
 
     public static IServiceCollection CustomAddCors(this IServiceCollection _services, string _cors, string _delemeter)
     {
-        var __cors = _cors.Split(_delemeter) ?? [];
+        var __cors = _cors
+            .Split(_delemeter, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .ToArray();
 
         _services.AddCors(_options =>
             _options.AddDefaultPolicy(
@@ -194,7 +196,8 @@ public static class ServiceExtensions
         .AddJwtBearer(options =>
         {
             options.SaveToken = true;
-            options.RequireHttpsMetadata = true; // Set to true in production
+            var requireHttpsMetadata = !_configuration.GetValue<bool>("JWT_ALLOW_HTTP", false);
+            options.RequireHttpsMetadata = requireHttpsMetadata; // keep true by default; allow opt-out for local HTTP
             options.TokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuer = true,
@@ -267,10 +270,14 @@ public static class ServiceExtensions
     #region  PRIVATE METHODS
     private class SlugifyParameterTransformer : IOutboundParameterTransformer
     {
-        public string TransformOutbound(object? _value) =>
-            _value == null ?
-                string.Empty :
-                Regex.Replace(_value.ToString() ?? string.Empty, "([a-z])([A-Z])", "$1-$1");
+        public string TransformOutbound(object? _value)
+        {
+            if (_value == null)
+                return string.Empty;
+
+            var slug = Regex.Replace(_value.ToString() ?? string.Empty, "([a-z])([A-Z])", "$1-$2");
+            return slug.ToLowerInvariant();
+        }
     }
     #endregion
 }

@@ -45,7 +45,7 @@ public class ErrorHandlerMiddleware
                 error,
                 error.Message
             );
-            
+
             string _statusCode = error switch
             {
                 NotFoundExceptions => ResponseCodes.StatusMessageCodes.NotFound,
@@ -66,7 +66,12 @@ public class ErrorHandlerMiddleware
                 _ => ResponseCodes.StatusMessages.InternalServerError
             };
 
-            var errorResponse = ApiResponseDto<object>.FailureResponse(error?.Message ?? "FAILED", error, _statusCode, _statusMessage);
+            var clientMessage = error is NotFoundExceptions or DuplicateExceptions or BadRequestExceptions
+                ? error.Message
+                : _statusMessage ?? "Unexpected error";
+
+            var errorResponse = ApiResponseDto<object>.FailureResponse(clientMessage, null, _statusCode, _statusMessage);
+            errorResponse.TraceId = context.TraceIdentifier;
 
             var result = JsonSerializer.Serialize(errorResponse);
 

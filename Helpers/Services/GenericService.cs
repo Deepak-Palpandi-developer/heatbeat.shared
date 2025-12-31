@@ -27,19 +27,19 @@ public class GenericService<TEntity, TDto> where TEntity : class where TDto : cl
 
     public virtual async Task<TDto?> GetByIdAsync(Guid id)
     {
-        var entity = await _repository.GetByIdAsync(id);
+        var entity = await _repository.GetByIdAsync(id, asNoTracking: true);
         return entity == null ? null : _mapper.Map<TDto>(entity);
     }
 
     public virtual async Task<IEnumerable<TDto>> GetAllAsync()
     {
-        var entities = await _repository.GetAllAsync();
+        var entities = await _repository.GetAllAsync(asNoTracking: true);
         return _mapper.Map<IEnumerable<TDto>>(entities);
     }
 
     public virtual async Task<IEnumerable<TDto>> FindAsync(Expression<Func<TEntity, bool>> predicate)
     {
-        var entities = await _repository.FindAsync(predicate);
+        var entities = await _repository.FindAsync(predicate, asNoTracking: true);
         return _mapper.Map<IEnumerable<TDto>>(entities);
     }
 

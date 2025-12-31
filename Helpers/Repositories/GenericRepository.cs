@@ -5,13 +5,13 @@ namespace HeatBeat.Shared.Helpers.Repositories;
 
 public interface IGenericRepository<T> where T : class
 {
-    IQueryable<T> GetQueryable();
-    Task<T?> GetByIdAsync(Guid id);
-    Task<IEnumerable<T>> GetAllAsync();
-    Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate);
-    Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate);
-    Task<bool> AnyAsync(Expression<Func<T, bool>> predicate);
-    Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null);
+    IQueryable<T> GetQueryable(bool asNoTracking = false);
+    Task<T?> GetByIdAsync(Guid id, bool asNoTracking = false);
+    Task<IEnumerable<T>> GetAllAsync(bool asNoTracking = true);
+    Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate, bool asNoTracking = true);
+    Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate, bool asNoTracking = true);
+    Task<bool> AnyAsync(Expression<Func<T, bool>> predicate, bool asNoTracking = true);
+    Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null, bool asNoTracking = true);
     Task<T> AddAsync(T entity);
     Task AddRangeAsync(IEnumerable<T> entities);
     void Update(T entity);
@@ -34,42 +34,55 @@ public class GenericRepository<T> : IGenericRepository<T>
     }
 
     #region QUERY OPERATIONS
-    public IQueryable<T> GetQueryable()
+    public IQueryable<T> GetQueryable(bool asNoTracking = false)
     {
-        return _dbSet.AsQueryable();
+        return asNoTracking ? _dbSet.AsNoTracking() : _dbSet.AsQueryable();
     }
 
-    public async Task<T?> GetByIdAsync(Guid id)
+    public async Task<T?> GetByIdAsync(Guid id, bool asNoTracking = false)
     {
-        return await _dbSet.FindAsync(id);
+        var entity = await _dbSet.FindAsync(id);
+
+        if (entity != null && asNoTracking)
+        {
+            _context.Entry(entity).State = EntityState.Detached;
+        }
+
+        return entity;
     }
 
-    public async Task<IEnumerable<T>> GetAllAsync()
+    public async Task<IEnumerable<T>> GetAllAsync(bool asNoTracking = true)
     {
-        return await _dbSet.ToListAsync();
+        var query = asNoTracking ? _dbSet.AsNoTracking() : _dbSet;
+        return await query.ToListAsync();
     }
 
-    public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate)
+    public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> predicate, bool asNoTracking = true)
     {
-        return await _dbSet.Where(predicate).ToListAsync();
+        var query = asNoTracking ? _dbSet.AsNoTracking() : _dbSet;
+        return await query.Where(predicate).ToListAsync();
     }
 
-    public async Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate)
+    public async Task<T?> FirstOrDefaultAsync(Expression<Func<T, bool>> predicate, bool asNoTracking = true)
     {
-        return await _dbSet.FirstOrDefaultAsync(predicate);
+        var query = asNoTracking ? _dbSet.AsNoTracking() : _dbSet;
+        return await query.FirstOrDefaultAsync(predicate);
     }
 
-    public async Task<bool> AnyAsync(Expression<Func<T, bool>> predicate)
+    public async Task<bool> AnyAsync(Expression<Func<T, bool>> predicate, bool asNoTracking = true)
     {
-        return await _dbSet.AnyAsync(predicate);
+        var query = asNoTracking ? _dbSet.AsNoTracking() : _dbSet;
+        return await query.AnyAsync(predicate);
     }
 
-    public async Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null)
+    public async Task<int> CountAsync(Expression<Func<T, bool>>? predicate = null, bool asNoTracking = true)
     {
+        var query = asNoTracking ? _dbSet.AsNoTracking() : _dbSet;
+
         if (predicate == null)
-            return await _dbSet.CountAsync();
+            return await query.CountAsync();
 
-        return await _dbSet.CountAsync(predicate);
+        return await query.CountAsync(predicate);
     }
 
     #endregion
