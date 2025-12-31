@@ -1,6 +1,6 @@
 namespace HeatBeat.Shared.Entities;
 
-public class BaseEntities
+public class BaseEntity
 {
     public bool IsActive { get; set; } = true;
 
