@@ -1,6 +1,6 @@
 using System.Text;
 using HeatBeat.Shared.Contants;
-using HeatBeat.Shared.Helpers;
+using HeatBeat.Shared.Helpers.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 

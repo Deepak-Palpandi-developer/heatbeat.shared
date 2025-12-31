@@ -7,6 +7,8 @@ using System.Text.RegularExpressions;
 using System.Threading.RateLimiting;
 using HeatBeat.Shared.Cache;
 using HeatBeat.Shared.Contants;
+using HeatBeat.Shared.Helpers.Repositories;
+using HeatBeat.Shared.Helpers.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Builder;
@@ -27,6 +29,12 @@ public static class ServiceExtensions
 {
     public static IServiceCollection AddInitialServiceCollections(this IServiceCollection _services)
     {
+        _services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
+
+        _services.AddScoped(typeof(IGenericService<,>), typeof(GenericService<,>));
+
+        _services.AddSingleton<IPayloadEncryptionService, PayloadEncryptionService>();
+
         return _services;
     }
 

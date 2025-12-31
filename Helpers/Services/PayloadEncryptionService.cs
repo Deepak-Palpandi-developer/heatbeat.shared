@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 using HeatBeat.Shared.Contants;
 using Microsoft.Extensions.Configuration;
 
-namespace HeatBeat.Shared.Helpers;
+namespace HeatBeat.Shared.Helpers.Services;
 
 public interface IPayloadEncryptionService
 {

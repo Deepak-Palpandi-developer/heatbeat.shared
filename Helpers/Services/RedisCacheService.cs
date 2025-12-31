@@ -1,7 +1,7 @@
 using System.Text.Json;
 using StackExchange.Redis;
 
-namespace HeatBeat.Shared.Helpers;
+namespace HeatBeat.Shared.Helpers.Services;
 
 public interface IRedisCacheService
 {

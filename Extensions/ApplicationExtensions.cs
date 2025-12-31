@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Builder;
+﻿using HeatBeat.Shared.Middleware;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,7 +26,7 @@ public static class ApplicationExtensions
             _app.UseSwagger();
             _app.UseSwaggerUI();
         }
-        
+
         return _app;
     }
 
@@ -37,5 +38,15 @@ public static class ApplicationExtensions
         });
 
         return _app;
+    }
+
+    public static IApplicationBuilder UseErrorHandling(this IApplicationBuilder _app)
+    {
+        return _app.UseMiddleware<ErrorHandlerMiddleware>();
+    }
+
+    public static IApplicationBuilder UseDataEncryptionDecryptionHandling(this IApplicationBuilder _app)
+    {
+        return _app.UseMiddleware<DataEncryptionDecryptionMiddleware>();
     }
 }
