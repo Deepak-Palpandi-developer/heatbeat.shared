@@ -9,7 +9,8 @@ namespace HeatBeat.Shared.Extensions;
 
 public static class ApplicationExtensions
 {
-    public static void MigratePostgresqlDatabase<T>(this WebApplication _app) where T : DbContext
+    public static void MigratePostgresqlDatabase<T>(this WebApplication _app)
+        where T : DbContext
     {
         using (var _scope = _app.Services.CreateScope())
         {
@@ -32,10 +33,13 @@ public static class ApplicationExtensions
 
     public static IApplicationBuilder CustomUseForwardedHeaders(this WebApplication _app)
     {
-        _app.UseForwardedHeaders(new ForwardedHeadersOptions
-        {
-            ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto
-        });
+        _app.UseForwardedHeaders(
+            new ForwardedHeadersOptions
+            {
+                ForwardedHeaders =
+                    ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+            }
+        );
 
         return _app;
     }
@@ -45,7 +49,9 @@ public static class ApplicationExtensions
         return _app.UseMiddleware<ErrorHandlerMiddleware>();
     }
 
-    public static IApplicationBuilder UseDataEncryptionDecryptionHandling(this IApplicationBuilder _app)
+    public static IApplicationBuilder UseDataEncryptionDecryptionHandling(
+        this IApplicationBuilder _app
+    )
     {
         return _app.UseMiddleware<DataEncryptionDecryptionMiddleware>();
     }

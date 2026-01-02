@@ -10,7 +10,9 @@ public class ConfigurableSecurityHeadersMiddleware
     private readonly SecurityHeadersOptions _options;
 
     public ConfigurableSecurityHeadersMiddleware(
-        RequestDelegate next, IOptions<SecurityHeadersOptions> options)
+        RequestDelegate next,
+        IOptions<SecurityHeadersOptions> options
+    )
     {
         _next = next;
         _options = options.Value;
@@ -25,13 +27,16 @@ public class ConfigurableSecurityHeadersMiddleware
             context.Response.Headers.TryAdd("X-XSS-Protection", _options.XXssProtection);
             context.Response.Headers.TryAdd("Referrer-Policy", _options.ReferrerPolicy);
             context.Response.Headers.TryAdd("Permissions-Policy", _options.PermissionsPolicy);
-            context.Response.Headers.TryAdd("Content-Security-Policy", _options.ContentSecurityPolicy);
+            context.Response.Headers.TryAdd(
+                "Content-Security-Policy",
+                _options.ContentSecurityPolicy
+            );
 
             if (_options.EnableHsts)
             {
                 var hstsValue =
-                    $"max-age={_options.HstsMaxAge}" +
-                    (_options.IncludeSubDomains ? "; includeSubDomains" : string.Empty);
+                    $"max-age={_options.HstsMaxAge}"
+                    + (_options.IncludeSubDomains ? "; includeSubDomains" : string.Empty);
 
                 context.Response.Headers.TryAdd("Strict-Transport-Security", hstsValue);
             }
