@@ -49,4 +49,9 @@ public static class ApplicationExtensions
     {
         return _app.UseMiddleware<DataEncryptionDecryptionMiddleware>();
     }
+
+    public static IApplicationBuilder UseConfigurableSecurityHeaders(this IApplicationBuilder _app)
+    {
+        return _app.UseMiddleware<ConfigurableSecurityHeadersMiddleware>();
+    }
 }
