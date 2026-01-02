@@ -7,6 +7,7 @@ using System.Text.RegularExpressions;
 using System.Threading.RateLimiting;
 using HeatBeat.Shared.Cache;
 using HeatBeat.Shared.Contants;
+using HeatBeat.Shared.Helpers;
 using HeatBeat.Shared.Helpers.Repositories;
 using HeatBeat.Shared.Helpers.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -21,6 +22,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
+using Serilog.Events;
 using Serilog.Sinks.PostgreSQL;
 
 namespace HeatBeat.Shared.Extensions;
@@ -108,22 +110,97 @@ public static class ServiceExtensions
             ["message"] = new RenderedMessageColumnWriter(),
             ["exception"] = new ExceptionColumnWriter(),
             ["properties"] = new PropertiesColumnWriter(NpgsqlTypes.NpgsqlDbType.Jsonb),
+            ["user_id"] = new SinglePropertyColumnWriter(
+        "UserId",
+        PropertyWriteMethod.ToString,
+        NpgsqlTypes.NpgsqlDbType.Varchar),
+
+            ["request_id"] = new SinglePropertyColumnWriter(
+        "RequestId",
+        PropertyWriteMethod.ToString,
+        NpgsqlTypes.NpgsqlDbType.Varchar),
+
+            ["trace_id"] = new SinglePropertyColumnWriter(
+        "TraceId",
+        PropertyWriteMethod.ToString,
+        NpgsqlTypes.NpgsqlDbType.Varchar),
+
+            ["path"] = new SinglePropertyColumnWriter(
+        "Path",
+        PropertyWriteMethod.ToString,
+        NpgsqlTypes.NpgsqlDbType.Varchar),
+
+            ["http_method"] = new SinglePropertyColumnWriter(
+        "Method",
+        PropertyWriteMethod.ToString,
+        NpgsqlTypes.NpgsqlDbType.Varchar),
+
+            ["status_code"] = new SinglePropertyColumnWriter(
+        "StatusCode",
+        PropertyWriteMethod.ToString,
+        NpgsqlTypes.NpgsqlDbType.Integer),
+
+            ["environment"] = new SinglePropertyColumnWriter(
+        "Environment",
+        PropertyWriteMethod.ToString,
+        NpgsqlTypes.NpgsqlDbType.Varchar),
+
             ["machine_name"] = new SinglePropertyColumnWriter(
-                "MachineName",
-                PropertyWriteMethod.ToString,
-                NpgsqlTypes.NpgsqlDbType.Varchar)
+        "MachineName",
+        PropertyWriteMethod.ToString,
+        NpgsqlTypes.NpgsqlDbType.Varchar)
         };
 
         builder.Host.UseSerilog((context, services, config) =>
         {
+            var logPath = builder.Configuration.GetValue<string>(EnvironmentCodes.LogFilePath) ?? "Logs";
+
             config
-                .ReadFrom.Configuration(context.Configuration)
-                .ReadFrom.Services(services)
+                .MinimumLevel.Information()
+                .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+                .MinimumLevel.Override("System", LogEventLevel.Warning)
                 .Enrich.FromLogContext()
+
+                // =========================
+                // INFO → info-yyyy-mm-dd.json
+                // =========================
+                .WriteTo.Logger(lc => lc
+                    .Filter.ByIncludingOnly(e => e.Level == LogEventLevel.Information)
+                    .WriteTo.File(
+                        new Serilog.Formatting.Json.JsonFormatter(),
+                        Path.Combine(logPath, "info", "info-.json"),
+                        rollingInterval: RollingInterval.Day))
+
+                // =========================
+                // WARN → warn-yyyy-mm-dd.json
+                // =========================
+                .WriteTo.Logger(lc => lc
+                    .Filter.ByIncludingOnly(e => e.Level == LogEventLevel.Warning)
+                    .WriteTo.File(
+                        new Serilog.Formatting.Json.JsonFormatter(),
+                        Path.Combine(logPath, "warn", "warn-.json"),
+                        rollingInterval: RollingInterval.Day))
+
+                // =========================
+                // ERROR/FATAL → error-yyyy-mm-dd.json
+                // =========================
+                .WriteTo.Logger(lc => lc
+                    .Filter.ByIncludingOnly(e =>
+                        e.Level == LogEventLevel.Error ||
+                        e.Level == LogEventLevel.Fatal)
+                    .WriteTo.File(
+                        new Serilog.Formatting.Json.JsonFormatter(),
+                        Path.Combine(logPath, "error", "error-.json"),
+                        rollingInterval: RollingInterval.Day))
+
+                // =========================
+                // DATABASE → Error & Fatal ONLY
+                // =========================
                 .WriteTo.PostgreSQL(
                     connectionString: connectionString,
                     tableName: tableName,
                     columnOptions: columnWriters,
+                    restrictedToMinimumLevel: LogEventLevel.Error,
                     needAutoCreateTable: true,
                     batchSizeLimit: 50,
                     period: TimeSpan.FromSeconds(5));
@@ -131,6 +208,7 @@ public static class ServiceExtensions
 
         return builder;
     }
+
 
     public static IServiceCollection AddCustomRateLimiter(this IServiceCollection _services)
     {

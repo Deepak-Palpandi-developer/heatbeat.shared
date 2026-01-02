@@ -2,6 +2,7 @@ using System.Text;
 using HeatBeat.Shared.Contants;
 using HeatBeat.Shared.Helpers.Services;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 
 namespace HeatBeat.Shared.Middleware;
@@ -11,19 +12,29 @@ public class DataEncryptionDecryptionMiddleware
     private readonly RequestDelegate _next;
     private readonly ILogger<DataEncryptionDecryptionMiddleware> _logger;
     private readonly IPayloadEncryptionService _encryptionService;
+    private readonly IConfiguration _configuration;
 
     public DataEncryptionDecryptionMiddleware(
         RequestDelegate next,
         ILogger<DataEncryptionDecryptionMiddleware> logger,
-        IPayloadEncryptionService encryptionService)
+        IPayloadEncryptionService encryptionService,
+        IConfiguration configuration)
     {
         _next = next;
         _logger = logger;
         _encryptionService = encryptionService;
+        _configuration = configuration;
     }
 
     public async Task InvokeAsync(HttpContext context)
     {
+        bool isEncryptionEnabled = _configuration.GetValue<bool>(EnvironmentCodes.IsEncryptionEnabled);
+        if (!isEncryptionEnabled)
+        {
+            await _next(context);
+            return;
+        }
+
         var shouldEncrypt = context.Request.Headers.TryGetValue("X-Encrypt-Data", out var encryptHeader) &&
                             string.Equals(encryptHeader, "true", StringComparison.OrdinalIgnoreCase);
 
@@ -34,6 +45,7 @@ public class DataEncryptionDecryptionMiddleware
         }
 
         var decrypted = await TryDecryptRequestAsync(context);
+
         if (!decrypted)
         {
             return;

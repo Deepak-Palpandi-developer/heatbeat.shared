@@ -7,12 +7,16 @@ using System.Text;
 using System.Text.Json;
 using HeatBeat.Shared.Contants;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
 namespace HeatBeat.Shared.Helpers;
 
-public static class CommonHelper
+public class CommonHelper
 {
+
+    public static IConfiguration _configuration = new ConfigurationBuilder().AddEnvironmentVariables(EnvironmentCodes.ApplicationPrefix).Build();
+
     public static string ToSnake(string? name)
     {
         if (string.IsNullOrWhiteSpace(name))
@@ -48,20 +52,20 @@ public static class CommonHelper
         }
     }
 
-    public static class TokenHelper
+    public class TokenHelper
     {
         public static (string token, DateTime expireAt) GenerateJwtToken(Dictionary<string, string> claims)
         {
-            var secretKey = Environment.GetEnvironmentVariable(EnvironmentCodes.JwtSecretKey) ?? throw new InvalidOperationException("JWT secret key is not configured.");
+            var secretKey = _configuration.GetValue<string>(EnvironmentCodes.JwtSecretKey) ?? throw new InvalidOperationException("JWT secret key is not configured.");
 
-            var expireMinutesString = Environment.GetEnvironmentVariable(EnvironmentCodes.JwtExpiryMinutes) ?? "60";
+            var expireMinutesString = _configuration.GetValue<string>(EnvironmentCodes.JwtExpiryMinutes) ?? "60";
             if (!int.TryParse(expireMinutesString, out int expireMinutes))
             {
                 expireMinutes = 60;
             }
 
-            var issuer = Environment.GetEnvironmentVariable(EnvironmentCodes.JwtIssuer);
-            var audience = Environment.GetEnvironmentVariable(EnvironmentCodes.JwtAudience);
+            var issuer = _configuration.GetValue<string>(EnvironmentCodes.JwtIssuer);
+            var audience = _configuration.GetValue<string>(EnvironmentCodes.JwtAudience);
 
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
@@ -113,7 +117,7 @@ public static class CommonHelper
 
     public static string Encrypt(string plainText)
     {
-        var _key = Environment.GetEnvironmentVariable(EnvironmentCodes.EncryptionKey) ?? throw new InvalidOperationException("Encryption key is not configured.");
+        var _key = _configuration.GetValue<string>(EnvironmentCodes.EncryptionKey) ?? throw new InvalidOperationException("Encryption key is not configured.");
 
         if (string.IsNullOrEmpty(plainText))
             return plainText;
@@ -145,8 +149,8 @@ public static class CommonHelper
 
     public static string Decrypt(string cipherText)
     {
-        var _key = Environment.GetEnvironmentVariable(EnvironmentCodes.EncryptionKey) ?? throw new InvalidOperationException("Encryption key is not configured.");
-        var _iv = Environment.GetEnvironmentVariable(EnvironmentCodes.EncryptionIV) ?? throw new InvalidOperationException("Encryption IV is not configured.");
+        var _key = _configuration.GetValue<string>(EnvironmentCodes.EncryptionKey) ?? throw new InvalidOperationException("Encryption key is not configured.");
+        var _iv = _configuration.GetValue<string>(EnvironmentCodes.EncryptionIV) ?? throw new InvalidOperationException("Encryption IV is not configured.");
 
         if (string.IsNullOrEmpty(cipherText))
             return cipherText;

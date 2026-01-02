@@ -54,4 +54,9 @@ public static class ApplicationExtensions
     {
         return _app.UseMiddleware<ConfigurableSecurityHeadersMiddleware>();
     }
+
+    public static IApplicationBuilder UseSerilogContext(this IApplicationBuilder _app)
+    {
+        return _app.UseMiddleware<SerilogContextMiddleware>();
+    }
 }
