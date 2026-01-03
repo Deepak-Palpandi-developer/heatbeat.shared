@@ -33,7 +33,7 @@ public class AuthenticationMiddleware
     {
         // Skip authentication for /auth/login and /auth/refresh endpoints
         var path = context.Request.Path.Value?.ToLower();
-        if (path != null && (path.Contains("/auth/login") || path.Contains("/auth/refresh")))
+        if (path != null && path.Contains("/auth/login"))
         {
             await _next(context);
             return;
@@ -55,34 +55,37 @@ public class AuthenticationMiddleware
         var handler = new JwtSecurityTokenHandler();
         SecurityToken validatedToken;
         ClaimsPrincipal? principal = null;
-        try
+        if (path != null && path.Contains("/auth/refresh"))
         {
-            principal = handler.ValidateToken(
-                token,
-                new TokenValidationParameters
-                {
-                    ValidateIssuerSigningKey = true,
-                    IssuerSigningKey = new SymmetricSecurityKey(
-                        Encoding.UTF8.GetBytes(
-                            _configuration[EnvironmentCodes.JwtSecretKey] ?? string.Empty
-                        )
-                    ),
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
-                    ClockSkew = TimeSpan.Zero,
-                },
-                out validatedToken
-            );
-        }
-        catch (SecurityTokenExpiredException)
-        {
-            await Respond401(context, false, true);
-            return;
-        }
-        catch
-        {
-            await Respond401(context, true, false);
-            return;
+            try
+            {
+                principal = handler.ValidateToken(
+                    token,
+                    new TokenValidationParameters
+                    {
+                        ValidateIssuerSigningKey = true,
+                        IssuerSigningKey = new SymmetricSecurityKey(
+                            Encoding.UTF8.GetBytes(
+                                _configuration[EnvironmentCodes.JwtSecretKey] ?? string.Empty
+                            )
+                        ),
+                        ValidateIssuer = false,
+                        ValidateAudience = false,
+                        ClockSkew = TimeSpan.Zero,
+                    },
+                    out validatedToken
+                );
+            }
+            catch (SecurityTokenExpiredException)
+            {
+                await Respond401(context, false, true);
+                return;
+            }
+            catch
+            {
+                await Respond401(context, true, false);
+                return;
+            }
         }
 
         // 2. Validate session_token
@@ -132,7 +135,7 @@ public class AuthenticationMiddleware
             JsonSerializer.Serialize(
                 new
                 {
-                    message = invalidToken ? "Invalid token. Please log in again."
+                    message = invalidToken ? "Invalid session token. Please log in again."
                     : tokenExpired ? "Token expired. Please refresh your token."
                     : "Unauthorized access.",
                     needLogin = invalidToken,
