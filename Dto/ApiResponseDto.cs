@@ -8,7 +8,7 @@ public class ApiResponseDto<T>
     public string Message { get; set; } = string.Empty;
     public T? Data { get; set; }
     public Object? Errors { get; set; } = new();
-    public DateTime Timestamp { get; set; } = DateTime.UtcNow;
+    public DateTimeOffset Timestamp { get; set; } = DateTime.UtcNow;
     public string? TraceId { get; set; }
 
     public static ApiResponseDto<T> SuccessResponse(T data, string message = "Success", string? statusCode = null, string? statusMessage = null)
@@ -23,7 +23,7 @@ public class ApiResponseDto<T>
         };
     }
 
-    public static ApiResponseDto<T> FailureResponse(string message, Object? errors, string? statusCode = null, string? statusMessage = null)
+    public static ApiResponseDto<T> FailureResponse(string message, Object? errors, string? statusCode = null, string? statusMessage = null, T data = default!)
     {
         return new ApiResponseDto<T>
         {
@@ -31,7 +31,8 @@ public class ApiResponseDto<T>
             StatusMessage = statusMessage,
             Success = false,
             Message = message,
-            Errors = errors
+            Errors = errors,
+            Data = data
         };
     }
 }

@@ -43,9 +43,9 @@ public abstract class BaseApiController : ControllerBase
         return base.NotFound(response);
     }
 
-    protected IActionResult Unauthorized<T>(string message = "Unauthorized access")
+    protected IActionResult Unauthorized<T>(string message = "Unauthorized access", T data = default!)
     {
-        var response = ApiResponseDto<T>.FailureResponse(message, null, ResponseCodes.StatusMessageCodes.Unauthorized, ResponseCodes.StatusMessages.Unauthorized);
+        var response = ApiResponseDto<T>.FailureResponse(message, null, ResponseCodes.StatusMessageCodes.Unauthorized, ResponseCodes.StatusMessages.Unauthorized, data);
         response.TraceId = HttpContext.TraceIdentifier;
         return base.Unauthorized(response);
     }

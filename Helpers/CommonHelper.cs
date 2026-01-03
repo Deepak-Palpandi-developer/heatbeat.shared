@@ -54,7 +54,7 @@ public class CommonHelper
 
     public class TokenHelper
     {
-        public static (string token, DateTime expireAt) GenerateJwtToken(Dictionary<string, string> claims)
+        public static (string token, DateTimeOffset expireAt) GenerateJwtToken(Dictionary<string, string> claims)
         {
             var secretKey = _configuration.GetValue<string>(EnvironmentCodes.JwtSecretKey) ?? throw new InvalidOperationException("JWT secret key is not configured.");
 

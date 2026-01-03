@@ -55,7 +55,7 @@ public class AuthenticationMiddleware
         var handler = new JwtSecurityTokenHandler();
         SecurityToken validatedToken;
         ClaimsPrincipal? principal = null;
-        if (path != null && path.Contains("/auth/refresh"))
+        if (path != null && !path.Contains("/auth/refresh"))
         {
             try
             {
@@ -157,5 +157,5 @@ public class UserSessionMiddlewareModel
     public string SessionToken { get; set; } = string.Empty;
     public bool IsActive { get; set; }
     public bool Revoked { get; set; }
-    public DateTime Expiry { get; set; }
+    public DateTimeOffset Expiry { get; set; }
 }
