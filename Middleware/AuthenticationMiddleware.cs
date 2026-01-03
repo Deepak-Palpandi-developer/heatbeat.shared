@@ -33,7 +33,7 @@ public class AuthenticationMiddleware
     {
         // Skip authentication for /auth/login and /auth/refresh endpoints
         var path = context.Request.Path.Value?.ToLower();
-        if (path != null && path.Contains("/auth/login"))
+        if (path != null && (path.Contains("/auth/login") || path.Contains("/app/get-configurations")))
         {
             await _next(context);
             return;
