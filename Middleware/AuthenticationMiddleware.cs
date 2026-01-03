@@ -123,6 +123,11 @@ public class AuthenticationMiddleware
             return;
         }
 
+        context.Response.Headers.TryAdd("session_token", session.SessionToken);
+        context.Response.Headers.TryAdd(
+            "user_id",
+            userId > 0 ? userId.ToString() : string.Empty
+        );
         // 3. Allow request
         await _next(context);
     }
