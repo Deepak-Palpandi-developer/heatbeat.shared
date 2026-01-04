@@ -28,13 +28,6 @@ public class DataEncryptionDecryptionMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
-        bool isEncryptionEnabled = _configuration.GetValue<bool>(EnvironmentCodes.IsEncryptionEnabled);
-        if (!isEncryptionEnabled)
-        {
-            await _next(context);
-            return;
-        }
-
         var shouldEncrypt = context.Request.Headers.TryGetValue("X-Encrypt-Data", out var encryptHeader) &&
                             string.Equals(encryptHeader, "true", StringComparison.OrdinalIgnoreCase);
 
@@ -125,7 +118,10 @@ public class DataEncryptionDecryptionMiddleware
                 context.Response.Headers.Remove("Content-Length");
                 context.Response.Headers["X-Data-Encrypted"] = "true";
 
-                await originalBodyStream.WriteAsync(Encoding.UTF8.GetBytes(encryptedResponse));
+                // await originalBodyStream.WriteAsync(Encoding.UTF8.GetBytes(encryptedResponse));
+                // return like {x:"encryptedData"}
+                var wrappedResponse = $"{{\"x\":\"{encryptedResponse}\"}}";
+                await originalBodyStream.WriteAsync(Encoding.UTF8.GetBytes(wrappedResponse));
 
                 _logger.LogInformation("Response body encrypted successfully");
             }
