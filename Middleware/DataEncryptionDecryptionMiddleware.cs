@@ -28,10 +28,17 @@ public class DataEncryptionDecryptionMiddleware
 
     public async Task InvokeAsync(HttpContext context)
     {
+        bool isEncryptionEnabled = _configuration.GetValue<bool>(EnvironmentCodes.IsEncryptionEnabled);
+        if (!isEncryptionEnabled)
+        {
+            await _next(context);
+            return;
+        }
+
         var shouldEncrypt = context.Request.Headers.TryGetValue("X-Encrypt-Data", out var encryptHeader) &&
                             string.Equals(encryptHeader, "true", StringComparison.OrdinalIgnoreCase);
 
-        if (!shouldEncrypt)
+        if (!shouldEncrypt && !isEncryptionEnabled)
         {
             await _next(context);
             return;
@@ -71,11 +78,28 @@ public class DataEncryptionDecryptionMiddleware
                 context.Request.EnableBuffering();
 
                 using var reader = new StreamReader(context.Request.Body, Encoding.UTF8, leaveOpen: true);
-                var encryptedBody = await reader.ReadToEndAsync();
+                var requestBody = await reader.ReadToEndAsync();
 
-                if (!string.IsNullOrWhiteSpace(encryptedBody))
+                if (!string.IsNullOrWhiteSpace(requestBody))
                 {
-                    var decryptedBody = _encryptionService.Decrypt(encryptedBody);
+                    // ✅ Parse JSON to extract the payload property
+                    var payloadWrapper = System.Text.Json.JsonSerializer.Deserialize<PayloadWrapper>(requestBody);
+
+                    if (payloadWrapper?.Payload == null)
+                    {
+                        _logger.LogWarning("Request body does not contain 'payload' property");
+                        context.Response.StatusCode = StatusCodes.Status400BadRequest;
+                        await context.Response.WriteAsJsonAsync(new
+                        {
+                            success = false,
+                            errorCode = ResponseCodes.CustomStatusMessageCodes.DecryptionFailed,
+                            message = "Invalid payload format"
+                        });
+                        return false;
+                    }
+
+                    // ✅ Decrypt only the payload value
+                    var decryptedBody = _encryptionService.Decrypt(payloadWrapper.Payload);
 
                     var requestContent = Encoding.UTF8.GetBytes(decryptedBody);
                     context.Request.Body = new MemoryStream(requestContent);
@@ -114,14 +138,16 @@ public class DataEncryptionDecryptionMiddleware
             {
                 var encryptedResponse = _encryptionService.Encrypt(responseBody);
 
+                // ✅ Wrap encrypted response in payload object
+                var responseWrapper = new PayloadWrapper { Payload = encryptedResponse };
+                var wrappedJson = System.Text.Json.JsonSerializer.Serialize(responseWrapper);
+
                 context.Response.ContentLength = null;
                 context.Response.Headers.Remove("Content-Length");
                 context.Response.Headers["X-Data-Encrypted"] = "true";
+                context.Response.ContentType = "application/json";
 
-                // await originalBodyStream.WriteAsync(Encoding.UTF8.GetBytes(encryptedResponse));
-                // return like {x:"encryptedData"}
-                var wrappedResponse = $"{{\"x\":\"{encryptedResponse}\"}}";
-                await originalBodyStream.WriteAsync(Encoding.UTF8.GetBytes(wrappedResponse));
+                await originalBodyStream.WriteAsync(Encoding.UTF8.GetBytes(wrappedJson));
 
                 _logger.LogInformation("Response body encrypted successfully");
             }
@@ -135,6 +161,10 @@ public class DataEncryptionDecryptionMiddleware
             _logger.LogError(ex, "Failed to encrypt response body");
             throw;
         }
+    }
+    private class PayloadWrapper
+    {
+        public string? Payload { get; set; }
     }
 
 }
