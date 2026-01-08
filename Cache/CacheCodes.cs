@@ -4,4 +4,5 @@ public class CacheCodes
 {
     public const string MasterData = "master_data";
     public const string ApplicationConfigurations = "application_configurations";
+    public const string UrlCaches = "url_caches";
 }
