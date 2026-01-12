@@ -35,15 +35,6 @@ public class DataEncryptionDecryptionMiddleware
             return;
         }
 
-        var shouldEncrypt = context.Request.Headers.TryGetValue("X-Encrypt-Data", out var encryptHeader) &&
-                            string.Equals(encryptHeader, "true", StringComparison.OrdinalIgnoreCase);
-
-        if (!shouldEncrypt && !isEncryptionEnabled)
-        {
-            await _next(context);
-            return;
-        }
-
         var decrypted = await TryDecryptRequestAsync(context);
 
         if (!decrypted)
